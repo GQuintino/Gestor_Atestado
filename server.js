@@ -27,7 +27,7 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     cookie: { 
-        secure: false, // Em produção (com HTTPS) deve ser 'true'
+        secure: false, // (com HTTPS) deve ser 'true'
         maxAge: 1000 * 60 * 60 * 8 // 8 horas de sessão
     }
 }));
