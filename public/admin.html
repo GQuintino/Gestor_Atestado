@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Sistema de Atestados</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1>Painel Administrativo - Atestados Médicos</h1>
+            <div class="admin-info">
+                <span id="userInfo">Administrador</span>
+                <button onclick="sair()" class="btn-sair">Sair</button>
+            </div>
+        </header>
+
+        <div class="dashboard">
+            <div class="stats-grid">
+                <div class="stat-card total">
+                    <h3>Total</h3>
+                    <span id="totalAtestados">0</span>
+                </div>
+                <div class="stat-card pendente">
+                    <h3>Pendentes</h3>
+                    <span id="pendentesAtestados">0</span>
+                </div>
+                <div class="stat-card aprovado">
+                    <h3>Aprovados</h3>
+                    <span id="aprovadosAtestados">0</span>
+                </div>
+                <div class="stat-card recusado">
+                    <h3>Recusados</h3>
+                    <span id="recusadosAtestados">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="filtros">
+            <select id="filtroStatus" onchange="filtrarAtestados()">
+                <option value="todos">Todos os Status</option>
+                <option value="pendente">Pendentes</option>
+                <option value="aprovado">Aprovados</option>
+                <option value="recusado">Recusados</option>
+            </select>
+            
+            <input type="text" id="buscaNome" placeholder="Buscar por nome..." onkeyup="filtrarAtestados()">
+            
+            <button onclick="carregarAtestados()" class="btn-atualizar">Atualizar</button>
+        </div>
+
+        <div class="atestados-list" id="listaAtestados">
+            <div class="loading">Carregando atestados...</div>
+        </div>
+
+        <!-- Modal para recusar atestado -->
+        <div id="modalRecusar" class="modal">
+            <div class="modal-content">
+                <h3>Recusar Atestado</h3>
+                <p>Informe o motivo da recusa:</p>
+                <textarea id="motivoRecusa" placeholder="Digite o motivo da recusa..." rows="4"></textarea>
+                <div class="modal-actions">
+                    <button onclick="confirmarRecusa()" class="btn-confirmar">Confirmar Recusa</button>
+                    <button onclick="fecharModal()" class="btn-cancelar">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para visualizar arquivo -->
+        <div id="modalArquivo" class="modal">
+            <div class="modal-content arquivo-modal">
+                <h3>Visualizar Atestado</h3>
+                <div id="visualizadorArquivo">
+                    <p>Carregando arquivo...</p>
+                </div>
+                <div class="modal-actions">
+                    <button onclick="fecharModalArquivo()" class="btn-cancelar">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

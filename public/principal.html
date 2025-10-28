@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Atestados</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .file-upload {
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+        }
+
+        .file-upload.dragover {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .recipients {
+            background-color: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .recipients h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .date-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .date-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>🏥 Sistema de Atestados</h1>
+            <p>Envio seguro e rápido de atestados médicos</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <div class="recipients">
+                <h3>📋 Destinatários</h3>
+                <p><strong>Coordenador:</strong> Receberá para análise e aprovação</p>
+                <p><strong>Segurança do Trabalho:</strong> Receberá para registro e acompanhamento</p>
+            </div>
+            
+            <form id="atestadoForm">
+                <div class="form-group">
+                    <label for="cid">CID (Classificação Internacional de Doenças)</label>
+                    <input
+                        type="text"
+                        id="cid"
+                        name="cid"
+                        placeholder="Ex: A00.0"
+                        maxlength="10"
+                    />
+                    <div class="error" id="cidError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="medico">Nome do Médico</label>
+                    <input
+                        type="text"
+                        id="medico"
+                        name="medico"
+                        placeholder="Nome completo do médico"
+                    />
+                    <div class="error" id="medicoError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="crm">CRM (Conselho Regional de Medicina)</label>
+                    <input
+                        type="text"
+                        id="crm"
+                        name="crm"
+                        placeholder="Número do CRM"
+                    />
+                    <div class="error" id="crmError"></div>
+                </div>
+
+                <div class="date-grid">
+                    <div class="form-group">
+                        <label for="dataInicio">Data de Início do Afastamento</label>
+                        <input
+                            type="date"
+                            id="dataInicio"
+                            name="dataInicio"
+                        />
+                        <div class="error" id="dataInicioError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dataFim">Data de Término do Afastamento</label>
+                        <input
+                            type="date"
+                            id="dataFim"
+                            name="dataFim"
+                        />
+                        <div class="error" id="dataFimError"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Anexar Atestado (PDF)</label>
+                    <div class="file-upload" id="fileUploadArea">
+                        <input
+                            type="file"
+                            id="fileInput"
+                            class="file-input"
+                            accept=".pdf"
+                        />
+                        
+                        <div id="fileUploadContent">
+                            <p>📎 Clique para selecionar ou arraste o arquivo aqui</p>
+                            <p><small>Apenas arquivos PDF são aceitos</small></p>
+                        </div>
+                    </div>
+                    <div class="error" id="fileError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="observacoes">Observações (Opcional)</label>
+                    <textarea
+                        id="observacoes"
+                        name="observacoes"
+                        rows="4"
+                        placeholder="Informações adicionais sobre o afastamento..."
+                    ></textarea>
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn">
+                    📤 Enviar Atestado
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('atestadoForm');
+            const fileInput = document.getElementById('fileInput');
+            const fileUploadArea = document.getElementById('fileUploadArea');
+            const fileUploadContent = document.getElementById('fileUploadContent');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            let selectedFile = null;
+
+            // File upload handling
+            fileUploadArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+
+            fileUploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                fileUploadArea.classList.add('dragover');
+            });
+
+            fileUploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                fileUploadArea.classList.remove('dragover');
+            });
+
+            fileUploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                fileUploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
+
+            function handleFileSelect(file) {
+                if (file && file.type === 'application/pdf') {
+                    selectedFile = file;
+                    fileUploadContent.innerHTML = `
+                        <div class="file-info">
+                            <strong>📄 Arquivo selecionado:</strong> ${file.name}
+                        </div>
+                    `;
+                    document.getElementById('fileError').textContent = '';
+                } else {
+                    alert('Por favor, selecione um arquivo PDF.');
+                    selectedFile = null;
+                    fileUploadContent.innerHTML = `
+                        <p>📎 Clique para selecionar ou arraste o arquivo aqui</p>
+                        <p><small>Apenas arquivos PDF são aceitos</small></p>
+                    `;
+                }
+            }
+
+            // Form submission
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (validateForm()) {
+                    // Simulate submission
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = 'Enviando...';
+                    submitBtn.classList.add('loading');
+                    
+                    // Simulate API call delay
+                    setTimeout(function() {
+                        window.location.href = 'confirmacao.html';
+                    }, 2000);
+                }
+            });
+
+            function validateForm() {
+                let isValid = true;
+                const errors = {};
+
+                // Clear previous errors
+                document.querySelectorAll('.error').forEach(el => {
+                    el.textContent = '';
+                });
+
+                // Validate CID
+                const cid = document.getElementById('cid').value.trim();
+                if (!cid) {
+                    errors.cid = 'CID é obrigatório';
+                    isValid = false;
+                }
+
+                // Validate médico
+                const medico = document.getElementById('medico').value.trim();
+                if (!medico) {
+                    errors.medico = 'Nome do médico é obrigatório';
+                    isValid = false;
+                }
+
+                // Validate CRM
+                const crm = document.getElementById('crm').value.trim();
+                if (!crm) {
+                    errors.crm = 'CRM é obrigatório';
+                    isValid = false;
+                }
+
+                // Validate dates
+                const dataInicio = document.getElementById('dataInicio').value;
+                const dataFim = document.getElementById('dataFim').value;
+                
+                if (!dataInicio) {
+                    errors.dataInicio = 'Data de início é obrigatória';
+                    isValid = false;
+                }
+                
+                if (!dataFim) {
+                    errors.dataFim = 'Data de fim é obrigatória';
+                    isValid = false;
+                }
+                
+                if (dataInicio && dataFim) {
+                    const inicio = new Date(dataInicio);
+                    const fim = new Date(dataFim);
+                    if (fim < inicio) {
+                        errors.dataFim = 'Data de fim não pode ser anterior à data de início';
+                        isValid = false;
+                    }
+                }
+
+                // Validate file
+                if (!selectedFile) {
+                    errors.file = 'Anexo do atestado é obrigatório';
+                    isValid = false;
+                }
+
+                // Display errors
+                Object.keys(errors).forEach(key => {
+                    const errorElement = document.getElementById(key + 'Error');
+                    if (errorElement) {
+                        errorElement.textContent = errors[key];
+                    }
+                });
+
+                return isValid;
+            }
+
+            // Set minimum date to today for date inputs
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dataInicio').min = today;
+            document.getElementById('dataFim').min = today;
+        });
+    </script>
+</body>
+</html>
