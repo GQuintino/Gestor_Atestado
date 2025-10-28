@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Primeiro Acesso - Coordenador</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container" style="max-width: 500px;">
+        <header>
+            <h1>Primeiro Acesso</h1>
+            <p>Crie a sua senha. Use o E-mail exatamente como está no seu cadastro (qhos.coord).</p>
+        </header>
+
+        <form id="formRegister">
+            <div class="form-group">
+                <label for="email">Seu E-mail Corporativo:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="senha">Crie uma Senha:</label>
+                <input type="password" id="senha" name="senha" required>
+            </div>
+            
+            <button type="submit" class="btn-submit">Criar Senha e Entrar</button>
+        </form>
+        
+        <div id="mensagem" class="mensagem" style="display: none;"></div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/login.html">Já tem senha? Faça login.</a>
+        </div>
+    </div>
+    <script src="register.js"></script>
+</body>
+</html>

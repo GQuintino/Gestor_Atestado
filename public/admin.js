@@ -6,8 +6,6 @@ let atestadosFiltrados = [];
 document.addEventListener('DOMContentLoaded', function() {
     carregarEstatisticas();
     carregarAtestados();
-    
-    // Atualizar a cada 30 segundos
     setInterval(() => {
         carregarEstatisticas();
         carregarAtestados();
@@ -20,7 +18,7 @@ async function carregarEstatisticas() {
         const estatisticas = await response.json();
         
         document.getElementById('totalAtestados').textContent = estatisticas.total;
-        document.getElementById('pendentesAtestados').textContent = estatisticas.pendentes;
+        document.getElementById('pendentesAtestados').textContent = estatisticas.pendentes; // (Virá 'pendente_admin')
         document.getElementById('aprovadosAtestados').textContent = estatisticas.aprovados;
         document.getElementById('recusadosAtestados').textContent = estatisticas.recusados;
         document.getElementById('invalidadosAtestados').textContent = estatisticas.invalidados || 0;
@@ -46,7 +44,10 @@ function filtrarAtestados() {
     const buscaNome = document.getElementById('buscaNome').value.toLowerCase();
     
     atestadosFiltrados = atestados.filter(atestado => {
-        const statusMatch = filtroStatus === 'todos' || atestado.status === filtroStatus;
+        const statusMatch = filtroStatus === 'todos' || 
+            (filtroStatus === 'pendente_admin' && atestado.status === 'pendente_admin') ||
+            atestado.status === filtroStatus;
+            
         const nomeMatch = atestado.nomeFuncionario.toLowerCase().includes(buscaNome);
         return statusMatch && nomeMatch;
     });
@@ -62,7 +63,62 @@ function renderizarAtestados() {
         return;
     }
     
-    container.innerHTML = atestadosFiltrados.map(atestado => `
+    container.innerHTML = atestadosFiltrados.map(atestado => {
+        let validacaoHtml = '';
+        let motivoHtml = '';
+
+        if (atestado.status === 'recusado') {
+            if (atestado.motivoRecusaCoordenador) {
+                validacaoHtml = `
+                <div class="meta-item">
+                    <span class="meta-label">Recusado por (Coord)</span>
+                    <span class="meta-value" style="color: #e74c3c;">${atestado.nomeCoordenadorValidador || 'N/A'}</span>
+                </div>`;
+                motivoHtml = `
+                <div class="meta-item">
+                    <span class="meta-label">Motivo (Coord)</span>
+                    <span class="meta-value">${atestado.motivoRecusaCoordenador}</span>
+                </div>`;
+            } else if (atestado.motivoRecusaAdmin) {
+                validacaoHtml = `
+                <div class="meta-item">
+                    <span class="meta-label">Recusado por (RH)</span>
+                    <span class="meta-value" style="color: #e74c3c;">${atestado.nomeAdminValidador || 'N/A'}</span>
+                </div>`;
+                motivoHtml = `
+                <div class="meta-item">
+                    <span class="meta-label">Motivo (RH)</span>
+                    <span class="meta-value">${atestado.motivoRecusaAdmin}</span>
+                </div>`;
+            }
+        } else {
+            validacaoHtml = `
+            <div class="meta-item">
+                <span class="meta-label">Aprovado por (Coord)</span>
+                <span class="meta-value" style="color: #27ae60;">${atestado.nomeCoordenadorValidador || 'N/A'}</span>
+            </div>`;
+            if (atestado.status === 'aprovado') {
+                 validacaoHtml += `
+                 <div class="meta-item">
+                    <span class="meta-label">Aprovado por (RH)</span>
+                    <span class="meta-value" style="color: #27ae60;">${atestado.nomeAdminValidador || 'N/A'}</span>
+                 </div>`;
+            }
+        }
+        
+        const botoesAcaoAdmin = `
+            <button onclick="aprovarAtestado(${atestado.id})" class="btn btn-aprovar">
+                Aprovar (RH)
+            </button>
+            <button onclick="abrirModalRecusar(${atestado.id})" class="btn btn-recusar">
+                Recusar (RH)
+            </button>
+            <button onclick="abrirModalEncaminhar(${atestado.id})" class="btn btn-encaminhar">
+                Encaminhar
+            </button>
+        `;
+
+        return `
         <div class="atestado-item ${atestado.status} ${!atestado.valido ? 'invalido' : ''}">
             <div class="atestado-header">
                 <div class="atestado-info">
@@ -79,27 +135,23 @@ function renderizarAtestados() {
                     <span class="meta-value">${formatarData(atestado.dataInicio)} a ${formatarData(atestado.dataFim)}</span>
                 </div>
                 <div class="meta-item">
+                    <span class="meta-label">Dias Afastado</span>
+                    <span class="meta-value">${atestado.diasAfastamento || 'N/A'} dia(s)</span>
+                </div>
+                <div class="meta-item">
                     <span class="meta-label">Data Emissão</span>
                     <span class="meta-value">${formatarData(atestado.dataEmissao)}</span>
                 </div>
                 <div class="meta-item">
                     <span class="meta-label">Médico</span>
-                    <span class="meta-value">${atestado.nomeMedico} - CRM: ${atestado.crmMedico}</span>
+                    <span class="meta-value">${atestado.nomeMedico || 'N/A'} - CRM: ${atestado.crmMedico || 'N/A'}</span>
                 </div>
-                <div class="meta-item">
-                    <span class="meta-label">Coordenador</span>
-                    <span class="meta-value">${atestado.coordenador}</span>
+                 <div class="meta-item">
+                    <span class="meta-label">Setor</span>
+                    <span class="meta-value">${atestado.setor || 'N/A'}</span>
                 </div>
-                <div class="meta-item">
-                    <span class="meta-label">E-mail</span>
-                    <span class="meta-value">${atestado.email}</span>
-                </div>
-                ${atestado.motivoRecusa ? `
-                <div class="meta-item">
-                    <span class="meta-label">Motivo Recusa</span>
-                    <span class="meta-value">${atestado.motivoRecusa}</span>
-                </div>
-                ` : ''}
+                ${validacaoHtml}
+                ${motivoHtml}
                 ${atestado.encaminhadoPara ? `
                 <div class="meta-item">
                     <span class="meta-label">Encaminhado para</span>
@@ -111,51 +163,63 @@ function renderizarAtestados() {
                 <button onclick="visualizarArquivo(${atestado.id})" class="btn btn-visualizar">
                     Visualizar Atestado
                 </button>
-                ${atestado.status === 'pendente' && atestado.valido ? `
-                <button onclick="aprovarAtestado(${atestado.id})" class="btn btn-aprovar">
-                    Aprovar
-                </button>
-                <button onclick="abrirModalRecusar(${atestado.id})" class="btn btn-recusar">
-                    Recusar
-                </button>
-                <button onclick="abrirModalEncaminhar(${atestado.id})" class="btn btn-encaminhar">
-                    Encaminhar
-                </button>
-                ` : ''}
+                ${atestado.status === 'pendente_admin' && atestado.valido ? botoesAcaoAdmin : ''}
                 <button onclick="downloadArquivo(${atestado.id})" class="btn btn-download">
                     Download
                 </button>
             </div>
             <div class="atestado-footer">
                 <small>Enviado em: ${formatarDataHora(atestado.dataEnvio)}</small>
-                ${atestado.dataValidacao ? `
-                <small> | Validado em: ${formatarDataHora(atestado.dataValidacao)}</small>
+                ${atestado.dataValidacaoCoordenador ? `
+                <small> | Valid. Coord.: ${formatarDataHora(atestado.dataValidacaoCoordenador)}</small>
                 ` : ''}
-                ${atestado.dataEncaminhamento ? `
-                <small> | Encaminhado em: ${formatarDataHora(atestado.dataEncaminhamento)}</small>
+                ${atestado.dataValidacaoAdmin ? `
+                <small> | Valid. RH: ${formatarDataHora(atestado.dataValidacaoAdmin)}</small>
                 ` : ''}
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 function getStatusText(status) {
     const statusMap = {
-        'pendente': 'Pendente',
+        'pendente_coordenador': 'Aguardando Coordenador',
+        'pendente_admin': 'Pendente (RH)',
         'aprovado': 'Aprovado',
         'recusado': 'Recusado'
     };
     return statusMap[status] || status;
 }
 
+// *** CORREÇÃO AQUI ***
 function formatarData(data) {
-    return new Date(data).toLocaleDateString('pt-BR');
+    if (!data) return 'N/A';
+    try {
+        // Cria um objeto Date a partir da string/objeto recebido do servidor
+        // Adiciona timeZone UTC para evitar problemas de fuso horário na formatação
+        const dataObj = new Date(data); 
+        return dataObj.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+    } catch (e) {
+        console.error("Erro ao formatar data:", data, e);
+        return 'Data Inválida'; // Retorna isto em caso de erro
+    }
 }
+// *** FIM DA CORREÇÃO ***
 
 function formatarDataHora(data) {
-    return new Date(data).toLocaleString('pt-BR');
+    if (!data) return 'N/A';
+    try {
+        // Para data e hora, não forçamos UTC na formatação,
+        // usamos o fuso horário local do servidor/browser
+        return new Date(data).toLocaleString('pt-BR');
+    } catch (e) {
+        console.error("Erro ao formatar data/hora:", data, e);
+        return 'Data/Hora Inválida';
+    }
 }
 
+
+// ... (Restante do ficheiro admin.js - funções visualizarArquivo, downloadArquivo, aprovarAtestado, etc. - sem alterações)
 async function visualizarArquivo(id) {
     const atestado = atestados.find(a => a.id === id);
     if (!atestado) return;
@@ -174,24 +238,20 @@ async function visualizarArquivo(id) {
         const url = URL.createObjectURL(blob);
         
         if (blob.type === 'application/pdf') {
-            visualizador.innerHTML = `
-                <iframe src="${url}" width="100%" height="400px"></iframe>
-            `;
+            visualizador.innerHTML = `<iframe src="${url}" width="100%" height="400px"></iframe>`;
         } else if (blob.type.startsWith('image/')) {
-            visualizador.innerHTML = `
-                <img src="${url}" alt="Atestado médico" style="max-width: 100%; max-height: 400px;">
-            `;
+            visualizador.innerHTML = `<img src="${url}" alt="Atestado médico" style="max-width: 100%; max-height: 400px;">`;
         } else {
-            visualizador.innerHTML = '<p>Visualização não disponível para este tipo de arquivo</p>';
+            visualizador.innerHTML = '<p>Visualização não disponível</p>';
         }
     } catch (error) {
-        console.error('Erro ao carregar arquivo:', error);
-        visualizador.innerHTML = '<p>Erro ao carregar arquivo</p>';
+        visualizador.innerHTML = `<p>Erro ao carregar arquivo: ${error.message}</p>`;
     }
 }
 
 function fecharModalArquivo() {
     document.getElementById('modalArquivo').style.display = 'none';
+    document.getElementById('visualizadorArquivo').innerHTML = '';
 }
 
 async function downloadArquivo(id) {
@@ -200,43 +260,43 @@ async function downloadArquivo(id) {
     
     try {
         const response = await fetch(`/api/atestados/${id}/arquivo`);
+        if (!response.ok) throw new Error('Arquivo não encontrado');
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
-        
         const a = document.createElement('a');
         a.href = url;
-        a.download = `atestado-${atestado.nomeFuncionario}-${atestado.dataInicio}${getFileExtension(atestado.arquivo)}`;
+        const extensao = getFileExtension(atestado.arquivo) || 'bin';
+        a.download = `atestado-${atestado.nomeFuncionario}-${atestado.dataInicio}.${extensao}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     } catch (error) {
-        console.error('Erro ao fazer download:', error);
         mostrarMensagem('Erro ao fazer download do arquivo', 'erro');
     }
 }
 
 function getFileExtension(filename) {
+    if (!filename) return '';
     return filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 2);
 }
 
+// Ação de Aprovação (Admin/RH)
 async function aprovarAtestado(id) {
-    if (!confirm('Tem certeza que deseja aprovar este atestado?')) return;
+    if (!confirm('Tem certeza que deseja APROVAR este atestado (Ação Final)?')) return;
     
     try {
         const response = await fetch(`/api/atestados/${id}/aprovar`, {
             method: 'POST'
         });
-        
         if (response.ok) {
             await carregarAtestados();
             await carregarEstatisticas();
-            mostrarMensagem('Atestado aprovado com sucesso!', 'sucesso');
+            mostrarMensagem('Atestado aprovado (final)!', 'sucesso');
         } else {
             mostrarMensagem('Erro ao aprovar atestado', 'erro');
         }
     } catch (error) {
-        console.error('Erro:', error);
         mostrarMensagem('Erro ao aprovar atestado', 'erro');
     }
 }
@@ -252,20 +312,18 @@ function fecharModal() {
     atestadoParaRecusar = null;
 }
 
+// Ação de Recusa (Admin/RH)
 async function confirmarRecusa() {
     const motivo = document.getElementById('motivoRecusa').value.trim();
-    
     if (!motivo) {
-        alert('Por favor, informe o motivo da recusa');
+        alert('Por favor, informe o motivo da recusa (RH)');
         return;
     }
     
     try {
         const response = await fetch(`/api/atestados/${atestadoParaRecusar}/recusar`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ motivo })
         });
         
@@ -273,13 +331,12 @@ async function confirmarRecusa() {
             fecharModal();
             await carregarAtestados();
             await carregarEstatisticas();
-            mostrarMensagem('Atestado recusado com sucesso!', 'sucesso');
+            mostrarMensagem('Atestado recusado (final)!', 'sucesso');
         } else {
             const error = await response.json();
             mostrarMensagem(error.error || 'Erro ao recusar atestado', 'erro');
         }
     } catch (error) {
-        console.error('Erro:', error);
         mostrarMensagem('Erro ao recusar atestado', 'erro');
     }
 }
@@ -299,18 +356,13 @@ function fecharModalEncaminhar() {
 async function confirmarEncaminhamento() {
     const emailsInput = document.getElementById('emailsGestores').value.trim();
     const mensagem = document.getElementById('mensagemGestor').value.trim();
-    
     if (!emailsInput) {
-        alert('Por favor, informe pelo menos um email');
+        alert('Informe pelo menos um email');
         return;
     }
-    
-    // Separar emails por vírgula e validar
     const emails = emailsInput.split(',').map(email => email.trim()).filter(email => email);
-    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const emailsInvalidos = emails.filter(email => !emailRegex.test(email));
-    
     if (emailsInvalidos.length > 0) {
         alert(`Emails inválidos: ${emailsInvalidos.join(', ')}`);
         return;
@@ -319,15 +371,9 @@ async function confirmarEncaminhamento() {
     try {
         const response = await fetch(`/api/atestados/${atestadoParaEncaminhar}/encaminhar`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-                emails, 
-                mensagem 
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emails, mensagem })
         });
-        
         if (response.ok) {
             fecharModalEncaminhar();
             await carregarAtestados();
@@ -337,7 +383,6 @@ async function confirmarEncaminhamento() {
             mostrarMensagem(error.error || 'Erro ao encaminhar atestado', 'erro');
         }
     } catch (error) {
-        console.error('Erro:', error);
         mostrarMensagem('Erro ao encaminhar atestado', 'erro');
     }
 }
@@ -349,42 +394,30 @@ function sair() {
 }
 
 function mostrarMensagem(texto, tipo) {
-    // Remove mensagem anterior se existir
     const mensagemAnterior = document.querySelector('.mensagem-flutuante');
     if (mensagemAnterior) {
         mensagemAnterior.remove();
     }
-    
     const mensagem = document.createElement('div');
     mensagem.className = `mensagem-flutuante ${tipo}`;
     mensagem.textContent = texto;
-    
     document.body.appendChild(mensagem);
-    
-    // Remove a mensagem após 5 segundos
     setTimeout(() => {
-        mensagem.remove();
+        if (mensagem.parentElement) {
+            mensagem.remove();
+        }
     }, 5000);
 }
 
-// Fechar modal ao clicar fora
 window.onclick = function(event) {
     const modalRecusar = document.getElementById('modalRecusar');
     const modalArquivo = document.getElementById('modalArquivo');
     const modalEncaminhar = document.getElementById('modalEncaminhar');
-    
-    if (event.target === modalRecusar) {
-        fecharModal();
-    }
-    if (event.target === modalArquivo) {
-        fecharModalArquivo();
-    }
-    if (event.target === modalEncaminhar) {
-        fecharModalEncaminhar();
-    }
+    if (event.target === modalRecusar) fecharModal();
+    if (event.target === modalArquivo) fecharModalArquivo();
+    if (event.target === modalEncaminhar) fecharModalEncaminhar();
 }
 
-// Fechar modal com ESC
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         fecharModal();

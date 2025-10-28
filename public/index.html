@@ -11,7 +11,7 @@
         <header>
             <h1>Envio de Atestado Médico</h1>
             <p>Preencha os dados abaixo para enviar seu atestado</p>
-            <div class="alerta" id="alerta48h">
+            <div class="alerta" id="alerta48h" style="display:block;">
                 ⚠️ <strong>Atenção:</strong> Atestados com mais de 48 horas de emissão não serão aceitos.
             </div>
         </header>
@@ -21,38 +21,40 @@
                 <label for="nomeFuncionario">Nome Completo:</label>
                 <input type="text" id="nomeFuncionario" name="nomeFuncionario" required>
             </div>
-
             <div class="form-group">
                 <label for="email">E-mail:</label>
                 <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="setor">Setor onde trabalha:</label>
+                <input type="text" id="setor" name="setor" placeholder="Ex: Manutenção, TI, RH..." required>
+            </div>
+            <div class="form-group">
+                <label for="hospital">Hospital onde foi atendido:</label>
+                <input type="text" id="hospital" name="hospital" placeholder="Nome do hospital ou clínica" required>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
                     <label for="dataEmissao">Data de Emissão do Atestado:</label>
                     <input type="date" id="dataEmissao" name="dataEmissao" required>
-                    <small>Data em que o médico emitiu o atestado</small>
                 </div>
             </div>
-
             <div class="form-row">
                 <div class="form-group">
                     <label for="dataInicio">Data Início do Afastamento:</label>
                     <input type="date" id="dataInicio" name="dataInicio" required>
                 </div>
-
                 <div class="form-group">
                     <label for="dataFim">Data Fim do Afastamento:</label>
                     <input type="date" id="dataFim" name="dataFim" required>
                 </div>
             </div>
-
             <div class="form-row">
                 <div class="form-group">
                     <label for="nomeMedico">Nome do Médico:</label>
                     <input type="text" id="nomeMedico" name="nomeMedico" required>
                 </div>
-
                 <div class="form-group">
                     <label for="crmMedico">CRM do Médico:</label>
                     <input type="text" id="crmMedico" name="crmMedico" required>
@@ -60,9 +62,11 @@
             </div>
 
             <div class="form-group">
-                <label for="coordenador">Nome do Coordenador:</label>
-                <input type="text" id="coordenador" name="coordenador" required>
-                <small>Informe o nome completo do seu coordenador direto</small>
+                <label for="coordenadorSelect">Seu Coordenador:</label>
+                <select id="coordenadorSelect" name="coordenadorId" required>
+                    <option value="">Carregando coordenadores...</option>
+                </select>
+                <small>Selecione seu coordenador direto para validação</small>
             </div>
 
             <div class="form-group">
@@ -70,7 +74,6 @@
                 <input type="file" id="atestadoFile" name="atestadoFile" accept=".pdf,.jpg,.jpeg,.png" required>
                 <small>Formatos aceitos: PDF, JPG, JPEG, PNG (máx. 5MB)</small>
             </div>
-
             <div class="termo-aceite">
                 <label>
                     <input type="checkbox" id="termoAceite" required>
@@ -78,7 +81,7 @@
                 </label>
             </div>
 
-            <button type="submit" class="btn-submit">Enviar Atestado</button>
+            <button type="submit" class="btn-submit">Enviar para Validação</button>
         </form>
 
         <div id="mensagem" class="mensagem"></div>

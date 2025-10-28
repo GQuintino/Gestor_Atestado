@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validação de Atestado</title>
+    <link rel="stylesheet" href="admin.css"> <style>
+        body { background-color: #f5f5f5; }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 1rem;
+        }
+        .atestado-detalhes { margin-bottom: 2rem; }
+        .atestado-meta { grid-template-columns: 1fr 1fr; }
+        .actions { display: flex; gap: 1rem; justify-content: center; }
+        .mensagem {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+        }
+        .mensagem.sucesso { color: #27ae60; background: #d4edda; }
+        .mensagem.erro { color: #e74c3c; background: #f8d7da; }
+        .mensagem.info { color: #004085; background: #cce7ff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Validação do Coordenador</h1>
+                <p>Olá, <span id="coordNome">...</span>. Analise o atestado pendente.</p>
+            </div>
+            <button onclick="logout()" class="btn-sair">Sair</button>
+        </div>
+
+        <div id="areaAtestado">
+            <div id="loading" class="loading">A verificar se existem atestados pendentes...</div>
+            <div id="semAtestados" class="mensagem info" style="display: none;">
+                ✅ Não existem atestados pendentes para a sua validação.
+            </div>
+        </div>
+
+        <div id="conteudoAtestado" style="display: none;">
+            <div class="atestado-detalhes atestado-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Colaborador</span>
+                    <span class="meta-value" id="nomeFuncionario"></span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Setor</span>
+                    <span class="meta-value" id="setor"></span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Período de Afastamento</span>
+                    <span class="meta-value" id="periodo"></span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Dias Afastado</span>
+                    <span class="meta-value" id="diasAfastamento"></span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Médico</span>
+                    <span class="meta-value" id="medico"></span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Hospital/Clínica</span>
+                    <span class="meta-value" id="hospital"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="motivoRecusaCoord">Motivo da Recusa (obrigatório se recusar):</label>
+                <textarea id="motivoRecusaCoord" rows="3" style="width: 100%;"></textarea>
+            </div>
+            
+            <div class="actions">
+                <button onclick="visualizarArquivo()" class="btn btn-visualizar">Visualizar Atestado</button>
+                <button onclick="tomarAcao('aprovar')" class="btn btn-aprovar">Aprovar e Enviar ao RH</button>
+                <button onclick="tomarAcao('recusar')" class="btn btn-recusar">Recusar</button>
+            </div>
+        </div>
+
+        <div id="mensagemAcao" class="mensagem" style="display: none;"></div>
+    </div>
+
+    <div id="modalArquivo" class="modal">
+        <div class="modal-content arquivo-modal">
+            <h3>Visualizar Atestado</h3>
+            <div id="visualizadorArquivo"><p>Carregando...</p></div>
+            <div class="modal-actions">
+                <button onclick="fecharModalArquivo()" class="btn-cancelar">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="coordenador.js"></script>
+</body>
+</html>
