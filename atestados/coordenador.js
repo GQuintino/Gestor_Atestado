@@ -1,35 +1,67 @@
 let atestadoId = null;
 let atestado = null; // Guarda os dados do atestado carregado
+let coordenadorToken = null; // Guarda o token de acesso da URL
 
 document.addEventListener('DOMContentLoaded', async function() {
-    // 1. Verifica se o utilizador está logado
-    const user = await checkAuth();
-    if (!user) {
-        // Se não estiver logado, redireciona para o login
-        window.location.href = '/login.html';
+    // 1. Extrai o token da URL
+    coordenadorToken = obterTokenDaURL();
+    
+    if (!coordenadorToken) {
+        // Se não houver token, exibe erro e para
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('conteudoAtestado').style.display = 'none';
+        document.getElementById('semAtestados').style.display = 'block';
+        document.getElementById('semAtestados').textContent = 'ERRO: Link de acesso inválido ou token não encontrado.';
+        document.getElementById('semAtestados').className = 'mensagem erro';
         return;
     }
     
-    // 2. Se logado, exibe o nome e carrega o próximo atestado
-    document.getElementById('coordNome').textContent = user.nome;
+    // 2. Busca o nome do coordenador e carrega o atestado
+    await carregarInfoCoordenador();
     carregarProximoAtestado();
 });
 
-// Verifica a sessão no servidor
-async function checkAuth() {
+// Extrai o token da URL (ex: /atestados/validar/TOKEN-VEM-AQUI)
+function obterTokenDaURL() {
     try {
-        const response = await fetch('/api/auth/check');
-        const result = await response.json();
-        return result.user || null; // Retorna os dados do utilizador ou nulo
-    } catch (error) {
+        const pathParts = window.location.pathname.split('/');
+        // O token é a última parte da URL
+        return pathParts[pathParts.length - 1]; 
+    } catch (e) {
         return null;
     }
 }
 
-// Carrega o próximo atestado pendente para este coordenador
-async function carregarProximoAtestado() {
+// (NOVA FUNÇÃO) Busca o nome do coordenador para exibir "Olá, [Nome]"
+async function carregarInfoCoordenador() {
+    if (!coordenadorToken) return;
     try {
-        const response = await fetch('/api/coordenador/proximo-atestado');
+        const response = await fetch(`/atestados/api/coordenador/${coordenadorToken}/info`);
+        
+        if (!response.ok) {
+           throw new Error('Não foi possível verificar os dados do coordenador.');
+        }
+        
+        const coordInfo = await response.json();
+        document.getElementById('coordNome').textContent = coordInfo.nome;
+        
+    } catch (error) {
+        // Se falhar, apenas não exibimos o nome
+        document.getElementById('coordNome').textContent = '(Coordenador)';
+        console.error("Erro ao buscar info do coordenador:", error.message);
+    }
+}
+
+
+// (FUNÇÃO REMOVIDA) A função checkAuth() foi removida.
+
+// Carrega o próximo atestado pendente (MODIFICADA)
+async function carregarProximoAtestado() {
+    if (!coordenadorToken) return; // Precisa do token
+
+    try {
+        // A URL da API agora inclui o token
+        const response = await fetch(`/atestados/api/coordenador/${coordenadorToken}/proximo-atestado`);
         
         if (!response.ok) {
             if (response.status === 404) {
@@ -45,7 +77,7 @@ async function carregarProximoAtestado() {
         atestado = await response.json();
         atestadoId = atestado.id;
         
-        // Popula os campos
+        // Popula os campos (esta parte não muda)
         document.getElementById('nomeFuncionario').textContent = atestado.nomeFuncionario;
         document.getElementById('setor').textContent = atestado.setor || 'N/A';
         document.getElementById('periodo').textContent = `${formatarData(atestado.dataInicio)} a ${formatarData(atestado.dataFim)}`;
@@ -64,7 +96,7 @@ async function carregarProximoAtestado() {
 }
 
 async function tomarAcao(acao) {
-    if (!atestadoId) return;
+    if (!atestadoId || !coordenadorToken) return;
 
     const motivoRecusa = document.getElementById('motivoRecusaCoord').value.trim();
     
@@ -76,8 +108,8 @@ async function tomarAcao(acao) {
     // Desabilita botões para evitar duplo clique
     document.querySelectorAll('.actions button').forEach(btn => btn.disabled = true);
     
-    const url = `/api/atestados/${atestadoId}/coordenador/${acao}`;
-    
+    // (MODIFICADO) A URL da API agora é mais completa e inclui o token
+    const url = `/atestados/api/coordenador/${coordenadorToken}/atestados/${atestadoId}/${acao}`;    
     try {
         const response = await fetch(url, {
             method: 'POST',
@@ -103,12 +135,9 @@ async function tomarAcao(acao) {
     }
 }
 
-async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/login.html';
-}
+// (FUNÇÃO REMOVIDA) A função logout() foi removida.
 
-// Funções de visualização de arquivo
+// Funções de visualização de arquivo (Não mudam)
 async function visualizarArquivo() {
     if (!atestadoId) return;
     
@@ -118,7 +147,8 @@ async function visualizarArquivo() {
     modal.style.display = 'flex';
     
     try {
-        const response = await fetch(`/api/atestados/${atestadoId}/arquivo`);
+        // A API de arquivo é pública (baseada no ID do atestado), não precisa de token
+        const response = await fetch(`/atestados/api/atestados/${atestadoId}/arquivo`);
         if (!response.ok) throw new Error('Arquivo não encontrado');
         
         const blob = await response.blob();
@@ -158,7 +188,7 @@ function mostrarMensagem(texto, tipo) {
     msgEl.style.display = 'block';
 }
 
-// Fechar modal ao clicar fora
+// Fechar modal ao clicar fora (Não muda)
 window.onclick = function(event) {
     const modalArquivo = document.getElementById('modalArquivo');
     if (event.target === modalArquivo) {

@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function carregarEstatisticas() {
     try {
-        const response = await fetch('/api/estatisticas');
+        const response = await fetch('/atestados/api/estatisticas');
         const estatisticas = await response.json();
         
         document.getElementById('totalAtestados').textContent = estatisticas.total;
@@ -29,7 +29,7 @@ async function carregarEstatisticas() {
 
 async function carregarAtestados() {
     try {
-        const response = await fetch('/api/atestados');
+        const response = await fetch('/atestados/api/atestados');
         atestados = await response.json();
         filtrarAtestados();
     } catch (error) {

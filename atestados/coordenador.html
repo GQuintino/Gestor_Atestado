@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Validação de Atestado</title>
-    <link rel="stylesheet" href="admin.css"> <style>
+    
+    <link rel="stylesheet" href="/atestados/admin.css"> 
+    
+    <style>
+        /* (Estilos específicos desta página, copiados do seu original) */
         body { background-color: #f5f5f5; }
         .container {
             max-width: 800px;
@@ -36,6 +40,8 @@
         .mensagem.sucesso { color: #27ae60; background: #d4edda; }
         .mensagem.erro { color: #e74c3c; background: #f8d7da; }
         .mensagem.info { color: #004085; background: #cce7ff; }
+        
+        /* (O seu 'admin.css' não tem btn-sair, então removemos o botão) */
     </style>
 </head>
 <body>
@@ -45,8 +51,7 @@
                 <h1>Validação do Coordenador</h1>
                 <p>Olá, <span id="coordNome">...</span>. Analise o atestado pendente.</p>
             </div>
-            <button onclick="logout()" class="btn-sair">Sair</button>
-        </div>
+            </div>
 
         <div id="areaAtestado">
             <div id="loading" class="loading">A verificar se existem atestados pendentes...</div>
@@ -108,6 +113,6 @@
         </div>
     </div>
 
-    <script src="coordenador.js"></script>
+    <script src="/atestados/coordenador.js"></script>
 </body>
 </html>
