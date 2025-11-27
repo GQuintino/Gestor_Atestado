@@ -8,10 +8,10 @@
     <link rel="stylesheet" href="/atestados/admin.css"> 
     
     <style>
-        /* (Estilos específicos desta página, copiados do seu original) */
+        /* Estilos específicos para esta página */
         body { background-color: #f5f5f5; }
         .container {
-            max-width: 800px;
+            max-width: 1000px; /* Mais largo para as listas */
             margin: 20px auto;
             background: white;
             padding: 2rem;
@@ -26,87 +26,134 @@
             border-bottom: 2px solid #e0e0e0;
             padding-bottom: 1rem;
         }
-        .atestado-detalhes { margin-bottom: 2rem; }
-        .atestado-meta { grid-template-columns: 1fr 1fr; }
-        .actions { display: flex; gap: 1rem; justify-content: center; }
-        .mensagem {
-            text-align: center;
+        
+        /* NOVO: Estilo para a "Dica" */
+        .dica-box {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-bottom: 2rem;
+            border-radius: 5px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .dica-icon {
+            font-size: 24px;
+            color: #3498db;
+        }
+        .dica-box p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
+        }
+        .dica-box p strong {
+            color: #2c3e50;
+        }
+
+        /* Estilo para as 3 colunas de listas */
+        .listas-container {
+            display: grid;
+            grid-template-columns: 1fr; /* 1 coluna em mobile */
+            gap: 2rem;
+        }
+
+        /* Em ecrãs maiores, usamos 3 colunas */
+        @media (min-width: 900px) {
+            .listas-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        .lista-coluna h2 {
             font-size: 1.2rem;
             font-weight: 600;
-            padding: 1rem;
-            border-radius: 5px;
-            margin-top: 1rem;
+            color: #2c3e50;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
         }
-        .mensagem.sucesso { color: #27ae60; background: #d4edda; }
-        .mensagem.erro { color: #e74c3c; background: #f8d7da; }
-        .mensagem.info { color: #004085; background: #cce7ff; }
         
-        /* (O seu 'admin.css' não tem btn-sair, então removemos o botão) */
+        /* Usar o estilo de item do admin.css */
+        .atestado-item {
+            font-size: 14px;
+        }
+        .atestado-item h3 {
+            font-size: 1rem;
+        }
+        .meta-label {
+            font-size: 0.75rem;
+        }
+        .meta-value {
+            font-size: 0.85rem;
+        }
+        
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <div>
-                <h1>Validação do Coordenador</h1>
-                <p>Olá, <span id="coordNome">...</span>. Analise o atestado pendente.</p>
-            </div>
-            </div>
-
-        <div id="areaAtestado">
-            <div id="loading" class="loading">A verificar se existem atestados pendentes...</div>
-            <div id="semAtestados" class="mensagem info" style="display: none;">
-                ✅ Não existem atestados pendentes para a sua validação.
+                <h1>Portal do Coordenador</h1>
+                <p>Olá, <span id="coordNome">...</span>. Gestão de atestados da sua equipa.</p>
             </div>
         </div>
 
-        <div id="conteudoAtestado" style="display: none;">
-            <div class="atestado-detalhes atestado-meta">
-                <div class="meta-item">
-                    <span class="meta-label">Colaborador</span>
-                    <span class="meta-value" id="nomeFuncionario"></span>
-                </div>
-                <div class="meta-item">
-                    <span class="meta-label">Setor</span>
-                    <span class="meta-value" id="setor"></span>
-                </div>
-                <div class="meta-item">
-                    <span class="meta-label">Período de Afastamento</span>
-                    <span class="meta-value" id="periodo"></span>
-                </div>
-                <div class="meta-item">
-                    <span class="meta-label">Dias Afastado</span>
-                    <span class="meta-value" id="diasAfastamento"></span>
-                </div>
-                <div class="meta-item">
-                    <span class="meta-label">Médico</span>
-                    <span class="meta-value" id="medico"></span>
-                </div>
-                <div class="meta-item">
-                    <span class="meta-label">Hospital/Clínica</span>
-                    <span class="meta-value" id="hospital"></span>
-                </div>
+        <div class="dica-box">
+            <div class="dica-icon">💡</div>
+            <div class="dica-texto">
+                <p>
+                    <strong>Dica de Avaliação:</strong> Antes de aprovar ou recusar, verifique sempre com atenção a <strong>data de emissão</strong> (deve ter menos de 48h no momento do envio), o nome do médico e o CRM.
+                </p>
             </div>
+        </div>
 
-            <div class="form-group">
-                <label for="motivoRecusaCoord">Motivo da Recusa (obrigatório se recusar):</label>
-                <textarea id="motivoRecusaCoord" rows="3" style="width: 100%;"></textarea>
+        <div id="loading" class="loading">A carregar atestados...</div>
+
+        <div class="listas-container">
+            <div class="lista-coluna">
+                <h2>Aguardando Ação</h2>
+                <div id="lista-pendentes">
+                    </div>
             </div>
             
-            <div class="actions">
-                <button onclick="visualizarArquivo()" class="btn btn-visualizar">Visualizar Atestado</button>
-                <button onclick="tomarAcao('aprovar')" class="btn btn-aprovar">Aprovar e Enviar ao RH</button>
-                <button onclick="tomarAcao('recusar')" class="btn btn-recusar">Recusar</button>
+            <div class="lista-coluna">
+                <h2>Aprovados por si</h2>
+                <div id="lista-aprovados">
+                    </div>
+            </div>
+
+            <div class="lista-coluna">
+                <h2>Recusados por si</h2>
+                <div id="lista-recusados">
+                    </div>
             </div>
         </div>
+    </div>
 
-        <div id="mensagemAcao" class="mensagem" style="display: none;"></div>
+    <div id="modalRecusar" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>Recusar Atestado</h3>
+            <p>Informe o motivo da recusa para o colaborador:</p>
+            <textarea id="motivoRecusa" placeholder="Ex: Atestado rasurado, data de emissão inválida..." rows="4"></textarea>
+            <div class="modal-actions">
+                <button onclick="confirmarRecusa()" class="btn-confirmar">Confirmar Recusa</button>
+                <button onclick="fecharModalRecusar()" class="btn-cancelar">Cancelar</button>
+            </div>
+        </div>
     </div>
 
     <div id="modalArquivo" class="modal">
         <div class="modal-content arquivo-modal">
             <h3>Visualizar Atestado</h3>
-            <div id="visualizadorArquivo"><p>Carregando...</p></div>
+            
+            <div class="dica-box" id="aviso-pdf-loading" style="display: none; background-color: #cce7ff; border-left-color: #3498db; margin-bottom: 1rem;">
+                <div class="dica-icon">⏳</div>
+                <p>O atestado (PDF/Imagem) está a ser carregado. A tela pode escurecer por alguns segundos...</p>
+            </div>
+            
+            <div id="visualizadorArquivo"><p>A carregar...</p></div>
             <div class="modal-actions">
                 <button onclick="fecharModalArquivo()" class="btn-cancelar">Fechar</button>
             </div>

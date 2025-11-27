@@ -18,7 +18,7 @@ async function carregarEstatisticas() {
         const estatisticas = await response.json();
         
         document.getElementById('totalAtestados').textContent = estatisticas.total;
-        document.getElementById('pendentesAtestados').textContent = estatisticas.pendentes; // (Virá 'pendente_admin')
+        document.getElementById('pendentesAtestados').textContent = estatisticas.pendentes;
         document.getElementById('aprovadosAtestados').textContent = estatisticas.aprovados;
         document.getElementById('recusadosAtestados').textContent = estatisticas.recusados;
         document.getElementById('invalidadosAtestados').textContent = estatisticas.invalidados || 0;
@@ -29,6 +29,7 @@ async function carregarEstatisticas() {
 
 async function carregarAtestados() {
     try {
+        // Esta API (assumindo a alteração no router) agora carrega TODOS os atestados
         const response = await fetch('/atestados/api/atestados');
         atestados = await response.json();
         filtrarAtestados();
@@ -44,9 +45,12 @@ function filtrarAtestados() {
     const buscaNome = document.getElementById('buscaNome').value.toLowerCase();
     
     atestadosFiltrados = atestados.filter(atestado => {
+        // MODIFICAÇÃO: Lógica de filtro atualizada
         const statusMatch = filtroStatus === 'todos' || 
             (filtroStatus === 'pendente_admin' && atestado.status === 'pendente_admin') ||
-            atestado.status === filtroStatus;
+            (filtroStatus === 'pendente_coordenador' && atestado.status === 'pendente_coordenador') ||
+            (filtroStatus === 'aprovado' && atestado.status === 'aprovado') ||
+            (filtroStatus === 'recusado' && atestado.status === 'recusado');
             
         const nomeMatch = atestado.nomeFuncionario.toLowerCase().includes(buscaNome);
         return statusMatch && nomeMatch;
@@ -91,11 +95,13 @@ function renderizarAtestados() {
                     <span class="meta-value">${atestado.motivoRecusaAdmin}</span>
                 </div>`;
             }
-        } else {
-            validacaoHtml = `
+        } else { // pendente_admin, pendente_coordenador, aprovado
+             validacaoHtml = `
             <div class="meta-item">
                 <span class="meta-label">Aprovado por (Coord)</span>
-                <span class="meta-value" style="color: #27ae60;">${atestado.nomeCoordenadorValidador || 'N/A'}</span>
+                <span class="meta-value" style="color: ${atestado.nomeCoordenadorValidador ? '#27ae60' : '#7f8c8d'};">
+                    ${atestado.nomeCoordenadorValidador || (atestado.status === 'pendente_coordenador' ? 'Aguardando...' : 'N/A')}
+                </span>
             </div>`;
             if (atestado.status === 'aprovado') {
                  validacaoHtml += `
@@ -123,7 +129,7 @@ function renderizarAtestados() {
             <div class="atestado-header">
                 <div class="atestado-info">
                     <h3>${atestado.nomeFuncionario}</h3>
-                    <span class="status-badge status-${atestado.status}">
+                    <span class="status-badge status-${atestado.status.replace('_coordenador', '')}">
                         ${getStatusText(atestado.status)}
                     </span>
                     ${!atestado.valido ? '<span class="status-badge status-invalido">Inválido</span>' : ''}
@@ -150,6 +156,12 @@ function renderizarAtestados() {
                     <span class="meta-label">Setor</span>
                     <span class="meta-value">${atestado.setor || 'N/A'}</span>
                 </div>
+                
+                <div class="meta-item">
+                    <span class="meta-label">Destinado ao Coordenador</span>
+                    <span class="meta-value">${atestado.coordenadorInfo.nome || 'N/A'}</span>
+                </div>
+                
                 ${validacaoHtml}
                 ${motivoHtml}
                 ${atestado.encaminhadoPara ? `
@@ -163,7 +175,9 @@ function renderizarAtestados() {
                 <button onclick="visualizarArquivo(${atestado.id})" class="btn btn-visualizar">
                     Visualizar Atestado
                 </button>
-                ${atestado.status === 'pendente_admin' && atestado.valido ? botoesAcaoAdmin : ''}
+                
+                ${(atestado.status === 'pendente_admin' || atestado.status === 'pendente_coordenador') && atestado.valido ? botoesAcaoAdmin : ''}
+                
                 <button onclick="downloadArquivo(${atestado.id})" class="btn btn-download">
                     Download
                 </button>
@@ -191,26 +205,20 @@ function getStatusText(status) {
     return statusMap[status] || status;
 }
 
-// *** CORREÇÃO AQUI ***
 function formatarData(data) {
     if (!data) return 'N/A';
     try {
-        // Cria um objeto Date a partir da string/objeto recebido do servidor
-        // Adiciona timeZone UTC para evitar problemas de fuso horário na formatação
         const dataObj = new Date(data); 
         return dataObj.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
     } catch (e) {
         console.error("Erro ao formatar data:", data, e);
-        return 'Data Inválida'; // Retorna isto em caso de erro
+        return 'Data Inválida';
     }
 }
-// *** FIM DA CORREÇÃO ***
 
 function formatarDataHora(data) {
     if (!data) return 'N/A';
     try {
-        // Para data e hora, não forçamos UTC na formatação,
-        // usamos o fuso horário local do servidor/browser
         return new Date(data).toLocaleString('pt-BR');
     } catch (e) {
         console.error("Erro ao formatar data/hora:", data, e);
@@ -219,7 +227,6 @@ function formatarDataHora(data) {
 }
 
 
-// ... (Restante do ficheiro admin.js - funções visualizarArquivo, downloadArquivo, aprovarAtestado, etc. - sem alterações)
 async function visualizarArquivo(id) {
     const atestado = atestados.find(a => a.id === id);
     if (!atestado) return;
@@ -231,7 +238,8 @@ async function visualizarArquivo(id) {
     modal.style.display = 'flex';
     
     try {
-        const response = await fetch(`/api/atestados/${id}/arquivo`);
+        // MODIFICAÇÃO: URL com prefixo
+        const response = await fetch(`/atestados/api/atestados/${id}/arquivo`);
         if (!response.ok) throw new Error('Arquivo não encontrado');
         
         const blob = await response.blob();
@@ -259,7 +267,8 @@ async function downloadArquivo(id) {
     if (!atestado) return;
     
     try {
-        const response = await fetch(`/api/atestados/${id}/arquivo`);
+        // MODIFICAÇÃO: URL com prefixo
+        const response = await fetch(`/atestados/api/atestados/${id}/arquivo`);
         if (!response.ok) throw new Error('Arquivo não encontrado');
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
@@ -286,7 +295,8 @@ async function aprovarAtestado(id) {
     if (!confirm('Tem certeza que deseja APROVAR este atestado (Ação Final)?')) return;
     
     try {
-        const response = await fetch(`/api/atestados/${id}/aprovar`, {
+        // MODIFICAÇÃO: URL com prefixo
+        const response = await fetch(`/atestados/api/atestados/${id}/aprovar`, {
             method: 'POST'
         });
         if (response.ok) {
@@ -321,7 +331,8 @@ async function confirmarRecusa() {
     }
     
     try {
-        const response = await fetch(`/api/atestados/${atestadoParaRecusar}/recusar`, {
+        // MODIFICAÇÃO: URL com prefixo
+        const response = await fetch(`/atestados/api/atestados/${atestadoParaRecusar}/recusar`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ motivo })
@@ -369,7 +380,8 @@ async function confirmarEncaminhamento() {
     }
     
     try {
-        const response = await fetch(`/api/atestados/${atestadoParaEncaminhar}/encaminhar`, {
+        // MODIFICAÇÃO: URL com prefixo
+        const response = await fetch(`/atestados/api/atestados/${atestadoParaEncaminhar}/encaminhar`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ emails, mensagem })

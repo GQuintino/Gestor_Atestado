@@ -8,15 +8,42 @@
 </head>
 <body>
     <div class="admin-container">
+        
         <header class="admin-header">
-            </header>
+            <h1>Admin - Sistema de Atestados</h1>
+            <div class="admin-info">
+                 </div>
+        </header>
 
         <div class="dashboard">
+            <div class="stats-grid">
+                <div class="stat-card total">
+                    <h3>Total (Pós-Coord)</h3>
+                    <span id="totalAtestados">0</span>
+                </div>
+                <div class="stat-card pendente">
+                    <h3>Pendentes (RH)</h3>
+                    <span id="pendentesAtestados">0</span>
+                </div>
+                <div class="stat-card aprovado">
+                    <h3>Aprovados</h3>
+                    <span id="aprovadosAtestados">0</span>
+                </div>
+                <div class="stat-card recusado">
+                    <h3>Recusados</h3>
+                    <span id="recusadosAtestados">0</span>
+                </div>
+                <div class="stat-card invalidado">
+                    <h3>Inválidos (48h)</h3>
+                    <span id="invalidadosAtestados">0</span>
+                </div>
             </div>
+        </div>
 
         <div class="filtros">
             <select id="filtroStatus" onchange="filtrarAtestados()">
                 <option value="todos">Todos os Status</option>
+                <option value="pendente_coordenador">Pendentes (Coordenador)</option>
                 <option value="pendente_admin">Pendentes (RH)</option>
                 <option value="aprovado">Aprovados</option>
                 <option value="recusado">Recusados</option>
@@ -43,10 +70,32 @@
         </div>
 
         <div id="modalEncaminhar" class="modal">
-             </div>
+            <div class="modal-content">
+                <h3>Encaminhar Atestado para Gestores</h3>
+                <div class="form-group">
+                    <label for="emailsGestores">E-mails (separados por vírgula):</label>
+                    <input type="text" id="emailsGestores" placeholder="email1@exemplo.com, email2@exemplo.com" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px;">
+                </div>
+                <div class="form-group">
+                    <label for="mensagemGestor">Mensagem Adicional (Opcional):</label>
+                    <textarea id="mensagemGestor" rows="3" placeholder="Mensagem a ser incluída no corpo do e-mail..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button onclick="confirmarEncaminhamento()" class="btn btn-encaminhar">Confirmar Envio</button>
+                    <button onclick="fecharModalEncaminhar()" class="btn-cancelar">Cancelar</button>
+                </div>
+            </div>
+        </div>
 
         <div id="modalArquivo" class="modal">
-             </div>
+            <div class="modal-content arquivo-modal">
+                <h3>Visualizar Atestado</h3>
+                <div id="visualizadorArquivo"><p>Carregando...</p></div>
+                <div class="modal-actions" style="justify-content: flex-end;">
+                    <button onclick="fecharModalArquivo()" class="btn-cancelar">Fechar</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="admin.js"></script>

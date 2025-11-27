@@ -242,16 +242,16 @@ app.use(session({
 console.log("🔧 Instanciando Roteadores...");
 const eventsRouter = createEventsRouter(pool, poolDash, transporter, logAndRespondError);
 const atestadosRouter = createAtestadosRouter(poolDash, transporter, uploadAtestado, logAndRespondError);
-const TransferRouter =  createTransferRouter (poolDash, transporter, upload, logAndRespondError);
+const TransferRouter =  createTransferRouter (pool, poolDash, transporter, logAndRespondError);
 console.log("   - Roteadores criados.");
 
 console.log("🧭 Montando Rotas das APIs...");
 app.use('/api/events', eventsRouter); // Rota existente
 app.use('/atestados', atestadosRouter); // Monta o novo router
-app.use('/transfer', TransferRouter);
+app.use('/api/transfer', TransferRouter);
 console.log("   - /api/events/... montado.");
 console.log("   - /atestados/... montado.");
-console.log("   - /transfer/... montado.");
+console.log("   - /api/transfer/... montado.");
 
 
 // --- 4. SEÇÃO DE AUTENTICAÇÃO ---
@@ -534,7 +534,7 @@ app.get('/endividamento.html', requireLogin, (req, res) => { res.sendFile(path.j
 app.get('/despesas_mensais.html', requireLogin, (req, res) => { res.sendFile(path.join(__dirname, "public", "despesas_mensais.html")); });
 app.get('/renegociacoes.html', requireLogin, (req, res) => { res.sendFile(path.join(__dirname, "public", "renegociacoes.html")); });
 app.get('/fluxo_caixa.html', requireLogin, (req, res) => { res.sendFile(path.join(__dirname, "public", "fluxo_caixa.html")); });
-app.get('/huddle.html', requireLogin, (req, res) => { res.sendFile(path.join(__dirname, "public", "huddle.html")); });
+app.get('/huddle.html', (req, res) => { res.sendFile(path.join(__dirname, "public", "huddle.html")); });
 app.get('/compras.html', requireLogin, (req, res) => { res.sendFile(path.join(__dirname, "public", "compras.html")); });
 
 

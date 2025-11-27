@@ -42,7 +42,7 @@ function createAtestadosRouter(poolDash, transporter, uploadAtestado, logAndResp
     };
 
     // --- Constantes e Funções Auxiliares ---
-    const uploadDirAtestados = '//10.172.0.11/Public/uploads'; 
+    const uploadDirAtestados = '/mnt/public/uploads'; 
     function isAtestadoValido(dataEmissao) {
         if (!dataEmissao) return false;
         try {
@@ -211,6 +211,38 @@ Medicina do Trabalho`.trim();
     // API pública de Upload
     router.post('/api/upload-atestado', uploadAtestado.single('atestadoFile'), async (req, res) => {
         const endpointName = '/api/upload-atestado';
+        
+        // --- INÍCIO DOS NOVOS LOGS ---
+        console.log(`[${endpointName}] Rota iniciada.`);
+        console.log(`[${endpointName}] Verificando req.file...`);
+        
+        if (!req.file) {
+            console.warn(`[${endpointName}] ERRO: req.file é NULO ou indefinido. O upload falhou (provavelmente filtro de tipo de ficheiro ou erro no multer).`);
+            // O 'return' original já está aqui
+            return res.status(400).json({ error: 'Arquivo do atestado é obrigatório' });
+        }
+        
+        // Se req.file existe, o multer tentou salvar.
+        console.log(`[${endpointName}] SUCESSO: req.file existe.`);
+        console.log(`[${endpointName}] Conteúdo de req.file:`, JSON.stringify(req.file, null, 2));
+
+        // Verificação de disco IMEDIATA
+        // (Usa a variável uploadDirAtestados definida no topo deste ficheiro, linha 50)
+        const caminhoCompleto = path.join(uploadDirAtestados, req.file.filename);
+        console.log(`[${endpointName}] Verificando existência do ficheiro em: ${caminhoCompleto}`);
+        
+        try {
+            const ficheiroExiste = fs.existsSync(caminhoCompleto);
+            console.log(`[${endpointName}] Resultado do fs.existsSync: ${ficheiroExiste}`);
+            
+            if (!ficheiroExiste) {
+                console.error(`[${endpointName}] ALERTA CRÍTICO! req.file existe, mas o ficheiro não foi encontrado em ${caminhoCompleto}.`);
+                console.error(`[${endpointName}] VERIFIQUE AS PERMISSÕES DE ESCRITA (WRITE) do utilizador Node.js na pasta montada: ${uploadDirAtestados}`);
+                // Nota: Continuamos o processo para salvar no DB, mas logámos o erro crítico.
+            }
+        } catch (fsErr) {
+            console.error(`[${endpointName}] Erro ao tentar verificar o ficheiro com fs.existsSync: ${fsErr.message}`);
+        }
         try {
             const { nomeFuncionario, dataInicio, dataFim, dataEmissao, nomeMedico, crmMedico, email, coordenadorId, setor, hospital } = req.body;
             if (!req.file) return res.status(400).json({ error: 'Arquivo do atestado é obrigatório' });
@@ -266,16 +298,27 @@ Medicina do Trabalho`.trim();
         res.json({ nome: req.coordinator.nome });
     });
 
-    // API: Obter próximo atestado da fila
-    router.get('/api/coordenador/:token/proximo-atestado', checkTokenCoord, async (req, res) => {
-        const endpointName = '/api/coordenador/proximo-atestado';
+    // API: Obter  atestado da fila (coord)
+    router.get('/api/coordenador/:token/meus-atestados', checkTokenCoord, async (req, res) => {
+        const endpointName = '/api/coordenador/meus-atestados';
         const coordenadorId = req.coordinator.id; 
         try {
-            const query = `SELECT * FROM qhos.atestados WHERE status = 'pendente_coordenador' AND coordenador_id = $1 ORDER BY data_envio ASC LIMIT 1;`;
+            // Busca todos os atestados vinculados a este coordenador
+            const query = `
+                SELECT * FROM qhos.atestados 
+                WHERE coordenador_id = $1 
+                ORDER BY 
+                    CASE WHEN status = 'pendente_coordenador' THEN 1 ELSE 2 END, 
+                    data_envio DESC;
+            `;
             const { rows } = await poolDash.query(query, [coordenadorId]);
-            if (rows.length === 0) return res.status(404).json({ error: 'Nenhum atestado pendente encontrado.' });
-            res.json(mapRowToAtestadoObject(rows[0]));
-        } catch (dbErr) { logAndRespondError(res, dbErr, endpointName); }
+            
+            // Mapeia os resultados para o formato de objeto
+            res.json(rows.map(mapRowToAtestadoObject));
+            
+        } catch (dbErr) { 
+            logAndRespondError(res, dbErr, endpointName); 
+        }
     });
 
     // API: Aprovar (Coordenador)
@@ -340,7 +383,7 @@ Medicina do Trabalho`.trim();
     router.get('/api/atestados', async (req, res) => {
         const endpointName = '/api/atestados (admin)';
         try {
-            const query = "SELECT * FROM qhos.atestados WHERE status <> 'pendente_coordenador' ORDER BY data_envio DESC";
+            const query = "SELECT * FROM qhos.atestados ORDER BY data_envio DESC";           
             const { rows } = await poolDash.query(query);
             res.json(rows.map(mapRowToAtestadoObject));
         } catch (dbErr) { logAndRespondError(res, dbErr, endpointName); }
@@ -351,8 +394,7 @@ Medicina do Trabalho`.trim();
         const endpointName = '/api/atestados/:id/aprovar (admin)';
         const id = parseInt(req.params.id); if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
         try {
-            const atestadoQuery = "SELECT nome_funcionario, email FROM qhos.atestados WHERE id = $1 AND status = 'pendente_admin'";
-            const { rows, rowCount } = await poolDash.query(atestadoQuery, [id]);
+            const atestadoQuery = "SELECT nome_funcionario, email FROM qhos.atestados WHERE id = $1 AND status IN ('pendente_admin', 'pendente_coordenador')";            const { rows, rowCount } = await poolDash.query(atestadoQuery, [id]);
             if (rowCount === 0) return res.status(404).json({ error: 'Atestado não encontrado ou status inválido' });
             const updateQuery = `UPDATE qhos.atestados SET status = 'aprovado', validado_por_admin = true, nome_admin_validador = 'Medicina do Trabalho', data_validacao_admin = NOW() WHERE id = $1;`;
             await poolDash.query(updateQuery, [id]);
@@ -367,8 +409,7 @@ Medicina do Trabalho`.trim();
         const id = parseInt(req.params.id); if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
         const { motivo } = req.body; if (!motivo || motivo.trim() === '') return res.status(400).json({ error: 'Motivo da recusa (RH) é obrigatório' });
         try {
-            const atestadoQuery = "SELECT nome_funcionario, email FROM qhos.atestados WHERE id = $1 AND status = 'pendente_admin'";
-            const { rows, rowCount } = await poolDash.query(atestadoQuery, [id]);
+            const atestadoQuery = "SELECT nome_funcionario, email FROM qhos.atestados WHERE id = $1 AND status IN ('pendente_admin', 'pendente_coordenador')";            const { rows, rowCount } = await poolDash.query(atestadoQuery, [id]);
             if (rowCount === 0) return res.status(404).json({ error: 'Atestado não encontrado ou status inválido' });
             const updateQuery = `UPDATE qhos.atestados SET status = 'recusado', validado_por_admin = true, nome_admin_validador = 'Medicina do Trabalho', motivo_recusa_admin = $1, data_validacao_admin = NOW() WHERE id = $2;`;
             await poolDash.query(updateQuery, [motivo.trim(), id]);
